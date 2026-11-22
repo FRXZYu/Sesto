@@ -420,4 +420,45 @@ class AssessmentRepository(context: Context) {
   }
 
   fun loadProfile(): UserProfile = readBaseProfile()
+
+  fun restoreUserDataFromCloud(cloudData: Map<String, Any>) {
+    val name = cloudData["name"] as? String ?: ""
+    val photoUri = cloudData["photoUri"] as? String
+    val zodiacSign = cloudData["zodiacSign"] as? String ?: "Aries"
+    val zodiacSymbol = cloudData["zodiacSymbol"] as? String ?: "♈"
+    val monthlyGoal = cloudData["monthlyGoal"] as? String ?: DEFAULT_GOAL
+    val email = cloudData["email"] as? String ?: ""
+
+    @Suppress("UNCHECKED_CAST")
+    val focusList = (cloudData["chosenFocusDimensions"] as? List<Long>)?.map { it.toInt() }?.toSet()
+      ?: (cloudData["chosenFocusDimensions"] as? List<Int>)?.toSet() ?: emptySet()
+
+    val profile = UserProfile(
+      name = name,
+      photoUri = photoUri,
+      zodiacSign = zodiacSign,
+      zodiacSymbol = zodiacSymbol,
+      monthlyGoal = monthlyGoal,
+      chosenFocusDimensions = focusList
+    )
+    saveProfile(profile)
+    saveAccountEmail(email)
+    markSignedIn()
+
+    @Suppress("UNCHECKED_CAST")
+    val currentMap = cloudData["currentScores"] as? Map<String, Any>
+    if (currentMap != null && currentMap.isNotEmpty()) {
+      val scores = mutableMapOf<Int, Int>()
+      currentMap.forEach { (k, v) ->
+        val kInt = k.toIntOrNull()
+        val vInt = (v as? Number)?.toInt()
+        if (kInt != null && vInt != null) {
+          scores[kInt] = vInt
+        }
+      }
+      if (scores.size == 6) {
+        saveScores(scores)
+      }
+    }
+  }
 }

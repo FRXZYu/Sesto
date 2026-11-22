@@ -22,6 +22,7 @@ import com.example.data.AppThemeMode
 import com.example.data.BalanceRepository
 import com.example.ui.AppScreenState
 import com.example.ui.MainViewModel
+import com.example.ui.screens.BirthDateScreen
 import com.example.ui.screens.LoadingScreen
 import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.MainHomeScreen
@@ -107,6 +108,19 @@ fun EquilibrioApp(viewModel: MainViewModel) {
         LoginScreen(
           onContinueWithGoogle = {
             viewModel.onContinueWithGoogle()
+          }
+        )
+      }
+
+      is AppScreenState.BirthDateSelection -> {
+        BackHandler {
+          // Stay or handle back
+        }
+        BirthDateScreen(
+          googleName = state.googleName,
+          googleEmail = state.googleEmail,
+          onBirthDateSubmitted = { day, month, year, zodiacSign, zodiacSymbol ->
+            viewModel.onBirthDateSubmitted(day, month, year, zodiacSign, zodiacSymbol, state.googleName)
           }
         )
       }

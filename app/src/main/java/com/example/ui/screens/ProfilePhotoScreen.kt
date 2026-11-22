@@ -4,10 +4,8 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,7 +42,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -89,7 +86,7 @@ fun ProfilePhotoScreen(
       Spacer(modifier = Modifier.height(24.dp))
 
       Text(
-        text = "Foto de Perfil",
+        text = "Foto de perfil",
         style = MaterialTheme.typography.displayMedium.copy(
           fontSize = 28.sp,
           fontWeight = FontWeight.Bold
@@ -100,21 +97,21 @@ fun ProfilePhotoScreen(
       Spacer(modifier = Modifier.height(8.dp))
 
       Text(
-        text = "Elige una foto circular desde tu galería para personalizar tu avatar.",
+        text = "Elige una foto para tu avatar o sáltalo por ahora si prefieres.",
         style = MaterialTheme.typography.bodyLarge,
         color = eqColors.textSecondary
       )
 
       Spacer(modifier = Modifier.height(48.dp))
 
-      // Circular Photo Frame
+      // Circular Photo Frame with Refined Material 3 Tonal Surface (No more harsh orange)
       Box(
         modifier = Modifier
           .size(170.dp)
-          .shadow(8.dp, CircleShape)
+          .shadow(6.dp, CircleShape)
           .clip(CircleShape)
-          .background(eqColors.avatarWarmBg)
-          .border(4.dp, eqColors.surfaceCard, CircleShape)
+          .background(eqColors.surfaceVariant)
+          .border(3.dp, eqColors.accentPrimary.copy(alpha = 0.35f), CircleShape)
           .bouncyClick {
             photoPickerLauncher.launch(
               PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -131,7 +128,6 @@ fun ProfilePhotoScreen(
             modifier = Modifier.fillMaxSize()
           )
         } else {
-          // Warm default illustrated avatar icon
           Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -139,13 +135,14 @@ fun ProfilePhotoScreen(
             Icon(
               imageVector = Icons.Outlined.Person,
               contentDescription = null,
-              tint = eqColors.avatarWarmFg,
+              tint = eqColors.accentPrimary,
               modifier = Modifier.size(72.dp)
             )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
               text = "Toca para elegir",
               style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-              color = eqColors.avatarWarmFg
+              color = eqColors.textSecondary
             )
           }
         }
@@ -154,7 +151,7 @@ fun ProfilePhotoScreen(
         Box(
           modifier = Modifier
             .align(Alignment.BottomEnd)
-            .padding(8.dp)
+            .padding(10.dp)
             .size(36.dp)
             .clip(CircleShape)
             .background(eqColors.accentPrimary)
@@ -183,7 +180,9 @@ fun ProfilePhotoScreen(
         shape = RoundedCornerShape(16.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, eqColors.border),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = eqColors.textPrimary),
-        modifier = Modifier.bouncyScale(galleryBtnInteraction)
+        modifier = Modifier
+          .bouncyScale(galleryBtnInteraction)
+          .testTag("btn_pick_gallery")
       ) {
         Icon(
           imageVector = Icons.Default.AddPhotoAlternate,
@@ -192,39 +191,68 @@ fun ProfilePhotoScreen(
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-          text = if (selectedUri == null) "Elegir foto de la galería" else "Cambiar foto",
+          text = if (selectedUri == null) "Elegir de la galería" else "Cambiar foto",
           style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
         )
       }
     }
 
-    val continueInteraction = rememberBounceInteractionSource()
-    Button(
-      onClick = {
-        onContinue(selectedUri?.toString())
-      },
-      interactionSource = continueInteraction,
-      shape = RoundedCornerShape(18.dp),
-      colors = ButtonDefaults.buttonColors(
-        containerColor = eqColors.accentPrimary,
-        contentColor = eqColors.onAccentPrimary
-      ),
-      modifier = Modifier
-        .fillMaxWidth()
-        .height(54.dp)
-        .bouncyScale(continueInteraction)
-        .testTag("btn_continue_photo")
+    // Bottom buttons: Continue and Saltar (Skip)
+    Column(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Text(
-        text = "Continuar",
-        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-      )
-      Spacer(modifier = Modifier.width(8.dp))
-      Icon(
-        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-        contentDescription = null,
-        modifier = Modifier.size(20.dp)
-      )
+      val continueInteraction = rememberBounceInteractionSource()
+      Button(
+        onClick = {
+          onContinue(selectedUri?.toString())
+        },
+        interactionSource = continueInteraction,
+        shape = RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.buttonColors(
+          containerColor = eqColors.accentPrimary,
+          contentColor = eqColors.onAccentPrimary
+        ),
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(54.dp)
+          .bouncyScale(continueInteraction)
+          .testTag("btn_continue_photo")
+      ) {
+        Text(
+          text = "Continuar",
+          style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Icon(
+          imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+          contentDescription = null,
+          modifier = Modifier.size(20.dp)
+        )
+      }
+
+      Spacer(modifier = Modifier.height(10.dp))
+
+      val skipInteraction = rememberBounceInteractionSource()
+      OutlinedButton(
+        onClick = {
+          onContinue(null)
+        },
+        interactionSource = skipInteraction,
+        shape = RoundedCornerShape(18.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, eqColors.border.copy(alpha = 0.5f)),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = eqColors.textSecondary),
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(48.dp)
+          .bouncyScale(skipInteraction)
+          .testTag("btn_skip_photo")
+      ) {
+        Text(
+          text = "Saltar",
+          style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium)
+        )
+      }
     }
   }
 }

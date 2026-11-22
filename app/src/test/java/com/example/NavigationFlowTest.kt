@@ -29,18 +29,22 @@ class NavigationFlowTest {
   }
 
   @Test
-  fun `fresh app starts on Login and transitions through Profile then Questionnaire then Report then Home`() {
+  fun `fresh app starts on Login and transitions through BirthDate then Name then Photo then Zodiac then Questionnaire then Report then Home`() {
     val viewModel = MainViewModel(app)
     assertTrue(viewModel.uiState.value is AppScreenState.Login)
 
     // 1. Login with Google
     viewModel.onContinueWithGoogle()
     val afterLogin = viewModel.uiState.value as AppScreenState.Loading
-    assertTrue(afterLogin.nextScreen is AppScreenState.NameInput)
+    assertTrue(afterLogin.nextScreen is AppScreenState.BirthDateSelection)
+    viewModel.onLoadingFinished()
+    assertTrue(viewModel.uiState.value is AppScreenState.BirthDateSelection)
+
+    // 2. Birth date selection -> NameInput -> ProfilePhoto -> ZodiacAndGoal
+    viewModel.onBirthDateSubmitted(15, 6, 1998, "Géminis", "♊", "Sofía")
     viewModel.onLoadingFinished()
     assertTrue(viewModel.uiState.value is AppScreenState.NameInput)
 
-    // 2. Profile setup: Name -> Photo -> Zodiac & Goal
     viewModel.onNameSubmitted("Sofía")
     viewModel.onLoadingFinished()
     assertTrue(viewModel.uiState.value is AppScreenState.ProfilePhoto)

@@ -2,21 +2,45 @@ package com.example.ui
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.analysis.LifeAnalysisEngine
 import com.example.data.AppPreferences
 import com.example.data.AssessmentRepository
+import com.example.data.CloudSyncHelper
 import com.example.model.AssessmentReport
 import com.example.model.DimensionsProvider
 import com.example.model.ReportFilter
 import com.example.model.UserProfile
-import com.example.ui.screens.MotivationalQuotes
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 sealed interface AppScreenState {
   data object Login : AppScreenState
+
+  data class BirthDateSelection(
+    val googleName: String,
+    val googleEmail: String
+  ) : AppScreenState
+
+  data class NameInput(
+    val currentName: String = ""
+  ) : AppScreenState
+
+  data class ProfilePhoto(
+    val name: String,
+    val photoUri: String? = null
+  ) : AppScreenState
+
+  data class ZodiacAndGoal(
+    val name: String,
+    val photoUri: String?,
+    val zodiacSign: String = "Aries",
+    val monthlyGoal: String = "Quiero ser mi mejor versión"
+  ) : AppScreenState
 
   data class Questionnaire(
     val currentStep: Int = 0,
@@ -40,22 +64,6 @@ sealed interface AppScreenState {
     val nextScreen: AppScreenState
   ) : AppScreenState
 
-  data class NameInput(
-    val currentName: String = ""
-  ) : AppScreenState
-
-  data class ProfilePhoto(
-    val name: String,
-    val photoUri: String? = null
-  ) : AppScreenState
-
-  data class ZodiacAndGoal(
-    val name: String,
-    val photoUri: String?,
-    val zodiacSign: String = "Aries",
-    val monthlyGoal: String = "Quiero ser mi mejor versión"
-  ) : AppScreenState
-
   data class Home(
     val userProfile: UserProfile,
     val report: AssessmentReport
@@ -73,9 +81,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
   val appPreferences: StateFlow<AppPreferences> = repository.appPrefsFlow
 
-  // Track profile in progress
+  // Track onboarding state in progress
   private var pendingName: String = ""
   private var pendingPhotoUri: String? = null
+  private var pendingZodiacSign: String = "Aries"
+  private var pendingZodiacSymbol: String = "♈"
+  private var pendingEmail: String = ""
 
   init {
     loadInitialState()
@@ -123,22 +134,107 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
   }
 
   fun onContinueWithGoogle() {
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val displayName = currentUser?.displayName ?: "Kirenia"
+    val email = currentUser?.email ?: "kirenia@example.com"
+    pendingEmail = email
+    pendingPhotoUri = currentUser?.photoUrl?.toString()
+
+    repository.saveAccountEmail(email)
     repository.markSignedIn()
-    if (!repository.isProfileCompleted()) {
-      startProfileSetup()
-    } else if (!repository.hasCompletedAssessment()) {
-      showLoadingTransition(
-        quote = "Es momento de observar tus 6 áreas con calma y honestidad.",
-        nextScreen = AppScreenState.Questionnaire(currentStep = 0, scores = emptyMap())
-      )
-    } else {
-      val currentScores = repository.loadCurrentScores() ?: return
+
+    val nextScreen = AppScreenState.BirthDateSelection(
+      googleName = displayName,
+      googleEmail = email
+    )
+    showLoadingTransition(
+      quote = "Comencemos a trazar tu camino hacia el equilibrio.",
+      nextScreen = nextScreen
+    )
+  }
+
+  fun onBirthDateSubmitted(day: Int, month: Int, year: Int, zodiacSign: String, zodiacSymbol: String, googleName: String) {
+    pendingZodiacSign = zodiacSign
+    pendingZodiacSymbol = zodiacSymbol
+    pendingName = googleName
+    val nextScreen = AppScreenState.NameInput(currentName = googleName)
+    showLoadingTransition(
+      quote = "Tu signo es $zodiacSign $zodiacSymbol. Ahora confirmemos tu nombre.",
+      nextScreen = nextScreen
+    )
+  }
+
+  fun onNameSubmitted(name: String) {
+    pendingName = name.trim().ifEmpty { "Kirenia" }
+    val nextScreen = AppScreenState.ProfilePhoto(name = pendingName, photoUri = pendingPhotoUri)
+    showLoadingTransition(
+      quote = "Reconocer tu identidad es el primer paso hacia una autoestima inquebrantable.",
+      nextScreen = nextScreen
+    )
+  }
+
+  fun onPhotoSelected(photoUri: String?) {
+    pendingPhotoUri = photoUri
+  }
+
+  fun onPhotoConfirmed(photoUri: String?) {
+    pendingPhotoUri = photoUri
+    val nextScreen = AppScreenState.ZodiacAndGoal(
+      name = pendingName,
+      photoUri = pendingPhotoUri,
+      zodiacSign = pendingZodiacSign
+    )
+    showLoadingTransition(
+      quote = "La autenticidad es tu mayor superpoder.",
+      nextScreen = nextScreen
+    )
+  }
+
+  fun onZodiacAndGoalFinished(zodiacSign: String, zodiacSymbol: String, monthlyGoal: String) {
+    pendingZodiacSign = zodiacSign
+    pendingZodiacSymbol = zodiacSymbol
+    val updatedProfile = UserProfile(
+      name = pendingName,
+      photoUri = pendingPhotoUri,
+      zodiacSign = zodiacSign,
+      zodiacSymbol = zodiacSymbol,
+      monthlyGoal = monthlyGoal
+    )
+    repository.saveProfile(updatedProfile)
+    syncUserDataToCloud()
+
+    val currentScores = repository.loadCurrentScores()
+    if (currentScores != null && currentScores.size == 6) {
       val previousScores = repository.loadPreviousScores()
       val report = LifeAnalysisEngine.generateReport(currentScores, previousScores)
-      val profile = repository.loadProfile()
+      val homeScreen = AppScreenState.Home(userProfile = updatedProfile, report = report)
       showLoadingTransition(
-        quote = "Qué alegría verte de vuelta. Tu equilibrio te espera.",
-        nextScreen = AppScreenState.Home(userProfile = profile, report = report)
+        quote = "Tus cimientos están listos. Es hora de conquistar tu mejor versión.",
+        nextScreen = homeScreen
+      )
+    } else {
+      showLoadingTransition(
+        quote = "Ahora evaluaremos tus 6 dimensiones para trazar tu hexágono inicial.",
+        nextScreen = AppScreenState.Questionnaire(currentStep = 0, scores = emptyMap())
+      )
+    }
+  }
+
+  private fun syncUserDataToCloud() {
+    viewModelScope.launch {
+      val currentUser = FirebaseAuth.getInstance().currentUser
+      val uid = currentUser?.uid ?: "test_user_uid"
+      val profile = repository.loadProfile()
+      val currentScores = repository.loadCurrentScores()
+      val previousScores = repository.loadPreviousScores()
+      CloudSyncHelper.saveUserDataToCloud(
+        uid = uid,
+        email = currentUser?.email ?: pendingEmail,
+        profile = profile,
+        currentScores = currentScores,
+        previousScores = previousScores,
+        isProfileCompleted = repository.isProfileCompleted(),
+        isAssessmentCompleted = repository.hasCompletedAssessment()
       )
     }
   }
@@ -190,6 +286,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
   private fun finishAssessment(scores: Map<Int, Int>) {
     repository.saveScores(scores)
+    syncUserDataToCloud()
     val previousScores = repository.loadPreviousScores()
     _uiState.value = AppScreenState.TransitioningToReport(
       scores = scores,
@@ -245,60 +342,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
   }
 
-  fun onNameSubmitted(name: String) {
-    pendingName = name
-    val nextScreen = AppScreenState.ProfilePhoto(name = name, photoUri = pendingPhotoUri)
-    showLoadingTransition(
-      quote = "Reconocer tu identidad es el primer paso hacia una autoestima inquebrantable.",
-      nextScreen = nextScreen
-    )
-  }
-
-  fun onPhotoSelected(photoUri: String?) {
-    pendingPhotoUri = photoUri
-  }
-
-  fun onPhotoConfirmed(photoUri: String?) {
-    pendingPhotoUri = photoUri
-    val nextScreen = AppScreenState.ZodiacAndGoal(
-      name = pendingName,
-      photoUri = pendingPhotoUri
-    )
-    showLoadingTransition(
-      quote = "La autenticidad es tu mayor superpoder: muéstrate al mundo sin máscaras.",
-      nextScreen = nextScreen
-    )
-  }
-
-  fun onZodiacAndGoalFinished(zodiacSign: String, zodiacSymbol: String, monthlyGoal: String) {
-    val updatedProfile = UserProfile(
-      name = pendingName,
-      photoUri = pendingPhotoUri,
-      zodiacSign = zodiacSign,
-      zodiacSymbol = zodiacSymbol,
-      monthlyGoal = monthlyGoal
-    )
-    repository.saveProfile(updatedProfile)
-
-    val currentScores = repository.loadCurrentScores()
-    if (currentScores != null && currentScores.size == 6) {
-      val previousScores = repository.loadPreviousScores()
-      val report = LifeAnalysisEngine.generateReport(currentScores, previousScores)
-      val homeScreen = AppScreenState.Home(userProfile = updatedProfile, report = report)
-      showLoadingTransition(
-        quote = "Tus cimientos están listos. Es hora de conquistar tu mejor versión.",
-        nextScreen = homeScreen
-      )
-    } else {
-      showLoadingTransition(
-        quote = "Ahora evaluaremos tus 6 dimensiones para trazar tu hexágono inicial.",
-        nextScreen = AppScreenState.Questionnaire(currentStep = 0, scores = emptyMap())
-      )
-    }
-  }
-
   fun onUpdateGoal(newGoal: String, reason: String = "") {
     repository.updateMonthlyGoal(newGoal, reason)
+    syncUserDataToCloud()
     val current = _uiState.value
     if (current is AppScreenState.Home) {
       val updatedProfile = current.userProfile.copy(monthlyGoal = newGoal)
@@ -308,6 +354,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
   fun onUpdateProfileIdentity(name: String, zodiacSign: String, zodiacSymbol: String) {
     repository.updateProfileIdentity(name, zodiacSign, zodiacSymbol)
+    syncUserDataToCloud()
     val current = _uiState.value
     if (current is AppScreenState.Home) {
       val updatedProfile = current.userProfile.copy(
