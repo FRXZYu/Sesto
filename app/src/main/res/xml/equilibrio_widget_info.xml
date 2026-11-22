@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_equilibrio_description"
+    android:initialLayout="@layout/widget_equilibrio_4x1"
+    android:minHeight="56dp"
+    android:minResizeHeight="56dp"
+    android:minResizeWidth="220dp"
+    android:minWidth="250dp"
+    android:previewImage="@drawable/widget_equilibrio_preview"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen" />

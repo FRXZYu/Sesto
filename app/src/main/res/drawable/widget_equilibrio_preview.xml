@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="280dp"
+    android:height="128dp"
+    android:viewportWidth="280"
+    android:viewportHeight="128">
+    <!-- Rounded card background -->
+    <path
+        android:fillColor="#FFFAFAFC"
+        android:strokeColor="#FFE2E5EB"
+        android:strokeWidth="1.5"
+        android:pathData="M22,2 L258,2 A20,20 0 0,1 278,22 L278,106 A20,20 0 0,1 258,126 L22,126 A20,20 0 0,1 2,106 L2,22 A20,20 0 0,1 22,2 Z" />
+    <!-- Left miniature hexagon -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFD1D5DB"
+        android:strokeWidth="1.8"
+        android:strokeLineJoin="round"
+        android:pathData="M62,24 L96.64,44 L96.64,84 L62,104 L27.36,84 L27.36,44 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFD1D5DB"
+        android:strokeWidth="1.2"
+        android:strokeLineJoin="round"
+        android:pathData="M62,44 L79.32,54 L79.32,74 L62,84 L44.68,74 L44.68,54 Z" />
+    <path
+        android:fillColor="#381E2024"
+        android:strokeColor="#FF1E2024"
+        android:strokeWidth="2.5"
+        android:strokeLineJoin="round"
+        android:pathData="M62,33 L88,49 L82,78 L62,92 L37,78 L41,51 Z" />
+    <!-- Right minimal placeholder bars representing 2 of 3 missions and streak pill -->
+    <path
+        android:fillColor="#FF191C21"
+        android:pathData="M126,42 h116 a4,4 0 0,1 4,4 v8 a4,4 0 0,1 -4,4 h-116 a4,4 0 0,1 -4,-4 v-8 a4,4 0 0,1 4,-4 z" />
+    <path
+        android:fillColor="#FFFEF3C7"
+        android:pathData="M134,70 h64 a12,12 0 0,1 12,12 v0 a12,12 0 0,1 -12,12 h-64 a12,12 0 0,1 -12,-12 v0 a12,12 0 0,1 12,-12 z" />
+    <path
+        android:fillColor="#FFD97706"
+        android:pathData="M136,75c0.4,1.3 0.4,2.3 0.4,3.1c0,1.1 -0.7,2 -1.8,2s-1.9,-0.9 -1.9,-2l0,-0.2c-1,1.3 -1.6,2.9 -1.6,4.7c0,2.3 1.9,4.2 4.2,4.2s4.2,-1.9 4.2,-4.2C139.5,79.6 138.1,76.8 136,75z" />
+</vector>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="equilibrio_canvas">#FF111317</color>
+    <color name="equilibrio_surface_card">#FF1A1D24</color>
+    <color name="equilibrio_border">#FF2E333F</color>
+    <color name="equilibrio_text_primary">#FFF3F4F6</color>
+    <color name="equilibrio_text_secondary">#FF9CA3AF</color>
+    <color name="equilibrio_accent_flame">#FFF59E0B</color>
+
+    <color name="equilibrio_widget_bg">#FF1A1D24</color>
+    <color name="equilibrio_widget_hex_grid">#FF374151</color>
+    <color name="equilibrio_widget_hex_fill">#45F3F4F6</color>
+    <color name="equilibrio_widget_hex_stroke">#FFF3F4F6</color>
+    <color name="equilibrio_widget_streak_pill_bg">#FF332611</color>
+    <color name="equilibrio_widget_streak_text">#FFFCD34D</color>
+</resources>
